@@ -1,22 +1,23 @@
 import {connect, h} from '../../state/render'
 import {styled} from '../../utilities/style/styled'
-import {get, put} from '../../utilities/store/unisaga.effects'
+import {get, put, wait} from '../../utilities/store/unisaga.effects'
 import {gameFocusLens, gameSelectedLens, gamesLens} from '../../state/store'
 import {wrapAction} from '../../utilities/store/unisaga'
-import {NesIcon} from '../../utilities/style/nesicons'
 import {Preview} from './Preview'
-
+import {CornerLabel} from '../../ui/CornerLabel'
+import {gamepad} from '../../utilities/gamepad'
 
 export const Game = connect({
     game    : ({gameId}) => gamesLens.child(gameId),
     focused : gameFocusLens,
     selected: gameSelectedLens,
 })(({game, focused, selected}) => {
+    if (!game) return <div/>
     console.log(focused)
     return <GameContainer>
         <Preview item={game.timeline[focused]}/>
-        <div class="nes-container with-title">
-            <span class="title">Timeline</span>
+        <TimelineContainer>
+            <CornerLabel size="14px">Timeline</CornerLabel>
             <NavigationBar oncreate={bindKeys} ondestroy={unbindKeys}>
                 {game.timeline.map((item, i) => {
                     let isSelected = i === selected
@@ -26,15 +27,12 @@ export const Game = connect({
                         oncreate={getOnScreen}
                         onupdate={getOnScreen}
                     >
-                        <label>
-                            {/*<input type="radio" class="nes-radio" name="selected-game" value={i} checked={isSelected}/>*/}
-                            <NesIcon icon="star" transparent={!isSelected}/>
-                        </label>
-                        <span>{item.label}</span>
+                        <Logo src={require('../../ui/logo.png')}/>
+                        <Label>{item.label}</Label>
                     </NavigationItem>
                 })}
             </NavigationBar>
-        </div>
+        </TimelineContainer>
     </GameContainer>
 })
 
@@ -43,85 +41,124 @@ const GameContainer = styled('div')({
     flexDirection: 'column',
     height       : '100vh',
 })
-
-const GameRender = styled('iframe')({
-    margin: 'auto',
-    width : '50vh',
-    height: '50vh',
+const TimelineContainer = styled('div')({
+    position: 'relative',
+    flex    : '0 0 auto',
 })
-
 const NavigationBar = styled('nav')({
-    height         : '20vh',
-    display        : 'flex',
-    alignItems     : 'center',
-    justifyContent : 'flex-start', // keep it ! do not try to center !
-    overflowX      : 'auto',
+    display       : 'flex',
+    alignItems    : 'center',
+    justifyContent: 'flex-start', // keep it ! do not try to center !
+    overflowX     : 'auto',
 })
-const NavigationItem = styled('article')(({selected}) => ({
-    flex : '1 0 310px',
-    fontWeight: selected ? '900' : '500',
-
+const NavigationItem = styled('article')({
+    flex          : '1 0 310px',
+    margin        : '20px auto',
     display       : 'flex',
     flexDirection : 'column',
     alignItems    : 'center',
     justifyContent: 'center',
+}, ({selected}) => ({
+    fontWeight: selected ? '900' : '500',
+    filter    : selected ? `drop-shadow(0px 0px 8px rgba(255, 255, 255, 1))` : 'none',
 }))
+const Logo = styled('img')({
+    height: '60px',
+})
+const Label = styled('span')({
+    display      : 'inline-block',
+    background   : 'white',
+    padding      : '6px',
+    fontSize     : '14px',
+    textTransform: 'uppercase',
+    position     : 'relative',
+    margin       : '8px',
 
+    '&, & *'           : {
+        verticalAlign: 'bottom',
+        lineHeight   : '1',
+    },
+    '&:after, &:before': {
+        content    : '""',
+        display    : 'inline-block',
+        position   : 'absolute',
+        width      : 0,
+        height     : 0,
+        borderStyle: 'solid',
+    },
+    '&:after'          : {
+        borderWidth: '13px 0 13px 13px',
+        borderColor: 'transparent transparent transparent white',
+        right      : '-13px',
+        top        : 0,
+    },
+    '&:before'         : {
+        borderWidth: '13px 13px 13px 0',
+        borderColor: 'transparent white transparent transparent',
+        left       : '-13px',
+        top        : 0,
+    },
+})
 
-function* onKeyPress(state, event) {
-    event.preventDefault()
+function* onButtonPress(state, event) {
     const current = yield get(gameSelectedLens)
     const elmsPos = [...document.querySelectorAll(NavigationItem.staticSelector)]
         .map($elm => $elm.getBoundingClientRect())
-        .map(({left, top}, i, elmsPos) => ({
-                hDistance: left - elmsPos[current].left,
-                vDistance: top - elmsPos[current].top,
-                i,
-            }),
+        .map(({left, top}, i, elmsPos) => {
+                const hDistance = left - elmsPos[current].left
+                const vDistance = top - elmsPos[current].top
+                return ({
+                    hDistance: hDistance - (hDistance % elmsPos[i].width), // add tolerance on alignment
+                    vDistance: vDistance - (vDistance % elmsPos[i].height), // add tolerance on alignment
+                    i,
+                })
+            },
         )
-    if (event.code === 'ArrowRight') {
+    console.log(elmsPos)
+    if (event.button === 'd_pad_right') {
         const {i} = elmsPos
             .filter(({hDistance, vDistance}) => hDistance > 0 && vDistance === 0)
             .sort(({hDistance: d1}, {hDistance: d2}) => d1 - d2)[0] || {i: current}
         yield put(gameSelectedLens, i)
     }
-    if (event.code === 'ArrowLeft') {
+    if (event.button === 'd_pad_left') {
         const {i} = elmsPos
             .filter(({hDistance, vDistance}) => hDistance < 0 && vDistance === 0)
             .sort(({hDistance: d1}, {hDistance: d2}) => d2 - d1)[0] || {i: current}
         yield put(gameSelectedLens, i)
     }
-    if (event.code === 'ArrowUp') {
+    if (event.button === 'd_pad_up') {
         const {i} = elmsPos
             .filter(({hDistance, vDistance}) => vDistance < 0 && hDistance === 0)
             .sort(({vDistance: d1}, {vDistance: d2}) => d2 - d1)[0] || {i: current}
         yield put(gameSelectedLens, i)
     }
-    if (event.code === 'ArrowDown') {
+    if (event.button === 'd_pad_down') {
         const {i} = elmsPos
             .filter(({hDistance, vDistance}) => vDistance > 0 && hDistance === 0)
             .sort(({vDistance: d1}, {vDistance: d2}) => d1 - d2)[0] || {i: current}
         yield put(gameSelectedLens, i)
     }
-    if (event.code === 'Enter') {
+    if (event.button === 'button_1') {
+        console.log("reset")
+        yield put(gameFocusLens, null)
+        yield wait(200)
+        console.log("set")
         yield put(gameFocusLens, current)
     }
 }
 
-const map = new WeakMap()
-
 function* bindKeys() {
     yield store => {
-        const listener = wrapAction(onKeyPress)(store)
-        map.set(onKeyPress, listener)
-        window.addEventListener('keydown', listener, false)
+        const buttonListener = wrapAction(onButtonPress)(store)
+        gamepad.on('press', "all", buttonListener)
     }
 }
 
 function* unbindKeys() {
-    const listener = map.get(onKeyPress)
-    window.removeEventListener('keydown', listener, false)
+    gamepad.off('press', 'all')
 }
+
 
 function noop() {
 }

@@ -4,15 +4,16 @@ import {h} from '../../state/render'
 import {gameFocusLens} from '../../state/store'
 import {put} from '../../utilities/store/unisaga.effects'
 import {styled} from '../../utilities/style/styled'
+
 export const MediaPreview = ({url, isAudio}) => {
     const sharedProps = {
-        oncreate : subscribe,
+        oncreate: subscribe,
         ondestroy: unsubscribe,
     }
     if (url.includes('youtube') || url.includes('vimeo')) {
-        return <Container {...sharedProps} class="plyr__video-embed">
+        return <div {...sharedProps} class="plyr__video-embed">
             <iframe src={url} allow="autoplay"/>
-        </Container>
+        </div>
     } else if (isAudio) {
         return <audio {...sharedProps}>
             <source src={url} type={'audio/' + url.split('.').slice(-1)[0]}/>
@@ -25,7 +26,7 @@ export const MediaPreview = ({url, isAudio}) => {
 }
 
 const Container = styled('div')({
-    paddingBottom: '75% !important'
+    paddingBottom: '75% !important',
 })
 
 const map = new WeakMap()
@@ -33,7 +34,7 @@ const map = new WeakMap()
 function* subscribe(state, elm) {
     const player = new Plyr(elm, {
         autoplay: true,
-        ratio: "4:3",
+        ratio   : '4:3',
     })
     player.on('ready', () => {
         return player.play()
@@ -41,7 +42,7 @@ function* subscribe(state, elm) {
     map.set(elm, player)
     yield new Promise((resolve) => {
         const listener = (event) => {
-            if (event.code === "Escape") {
+            if (event.code === 'Escape') {
                 window.removeEventListener('keydown', listener, false)
                 resolve()
             }
@@ -52,6 +53,21 @@ function* subscribe(state, elm) {
 }
 
 function unsubscribe(state, elm) {
-    const player = map.get(elm)
-    player && player.destroy()
+    /*console.log('destroy ???', state, elm, done)
+    try {
+        const player = map.get(elm)
+        console.log('player', player)
+        if (player) {
+            player.destroy((...params) => {
+                console.log('destroyed', ...params)
+                done()
+            })
+        } else {
+            done()
+        }
+    } catch (e) {
+        console.error(e)
+        done()
+    }*/
+
 }

@@ -1,6 +1,7 @@
 const {join} = require('path')
 const CopyWebpackPlugin = require('copy-webpack-plugin')
 const HtmlWebpackPlugin = require('html-webpack-plugin')
+const ref = process.cwd()
 
 module.exports = {
     entry: fromHere('src/app'),
@@ -56,5 +57,5 @@ module.exports = {
 }
 
 function fromHere(...args) {
-    return join(__dirname, ...args)
+    return join(ref, ...args)
 }

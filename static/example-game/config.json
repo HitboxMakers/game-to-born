@@ -1,0 +1,25 @@
+{
+  "name": "Example game",
+  "thumbnail": "./NekoShinobi_Team.jpg",
+  "timeline": [
+    {
+      "type": "images",
+      "images": [
+        "./ChienSamourai.png",
+        "./NekoShinobi_Team.jpg",
+        "./Nourriture.png"
+      ],
+      "label": "Vendredi soir 18h"
+    },
+    {
+      "type": "iframe",
+      "url": "./NekoShinobi webgl 1301191817/",
+      "label": "Samedi matin 8h"
+    },
+    {
+      "type": "media",
+      "url": "./Neko.mp4",
+      "label": "Dimanche soir 17h"
+    }
+  ]
+}

@@ -1,6 +1,6 @@
 import Siema from 'siema'
 import {h} from '../../state/render'
-import {put} from '../../utilities/store/unisaga.effects'
+import {put, wait} from '../../utilities/store/unisaga.effects'
 import {gameFocusLens} from '../../state/store'
 import {styled} from '../../utilities/style/styled'
 
@@ -31,6 +31,7 @@ const SiemaContainer = styled('div')({
 const map = new WeakMap()
 
 function* subscribe(state, elm) {
+    yield wait(500)
     console.log('siema', elm)
     const player = new Siema({
         selector: elm,

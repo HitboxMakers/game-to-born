@@ -1,125 +1,57 @@
 import createStore from 'unistore'
 import {Lens} from '../utilities/store/simpleLenses'
 import {initializeRouter} from './router'
-
+import ky from 'ky'
+import join from 'url-join'
+import {gamesList} from '../gameList'
 
 export const store = createStore({
     route: initializeRouter(),
     home : {
         selected: 0,
     },
-    game: {
+    game : {
         selected: 0,
-        focus: null,
+        focus   : null,
     },
-    games: [
-        {
-            name     : `Example game`,
-            thumbnail: `https://i.ytimg.com/vi/BSqe-M7ffF8/maxresdefault.jpg`,
-            timeline   : [
-                {
-                    type: "images",
-                    images: [
-                        `https://i.ytimg.com/vi/BSqe-M7ffF8/maxresdefault.jpg`,
-                        `https://i.ytimg.com/vi/BSqe-M7ffF8/maxresdefault.jpg`,
-                        `https://i.ytimg.com/vi/BSqe-M7ffF8/maxresdefault.jpg`,
-                        `https://i.ytimg.com/vi/BSqe-M7ffF8/maxresdefault.jpg`
-                    ],
-                    label: "Vendredi soir 18h",
-                },
-                {
-                    type: "iframe",
-                    url: `/PUDDI_BRAWL_001/`,
-                    label: "Samedi matin 8h",
-                },
-                {
-                    type: 'media',
-                    url: `https://www.youtube.com/embed/hyFST8UsRUQ?controls=0`,
-                    label: "Dimanche soir 17h",
-                }
-            ],
-        },
-        {
-            name     : `Example game`,
-            thumbnail: `https://i.ytimg.com/vi/BSqe-M7ffF8/maxresdefault.jpg`,
-            timeline   : [
-                {
-                    type: "images",
-                    images: [
-                        `https://i.ytimg.com/vi/BSqe-M7ffF8/maxresdefault.jpg`,
-                        `https://i.ytimg.com/vi/BSqe-M7ffF8/maxresdefault.jpg`,
-                        `https://i.ytimg.com/vi/BSqe-M7ffF8/maxresdefault.jpg`,
-                        `https://i.ytimg.com/vi/BSqe-M7ffF8/maxresdefault.jpg`
-                    ],
-                    label: "Vendredi soir 18h",
-                },
-                {
-                    type: "iframe",
-                    url: `/PUDDI_BRAWL_001/`,
-                    label: "Samedi matin 8h",
-                },
-                {
-                    type: 'media',
-                    url: `https://www.youtube.com/embed/hyFST8UsRUQ?controls=0`,
-                    label: "Dimanche soir 17h",
-                }
-            ],
-        },
-        {
-            name     : `Example game`,
-            thumbnail: `https://i.ytimg.com/vi/BSqe-M7ffF8/maxresdefault.jpg`,
-            timeline   : [
-                {
-                    type: "images",
-                    images: [
-                        `https://i.ytimg.com/vi/BSqe-M7ffF8/maxresdefault.jpg`,
-                        `https://i.ytimg.com/vi/BSqe-M7ffF8/maxresdefault.jpg`,
-                        `https://i.ytimg.com/vi/BSqe-M7ffF8/maxresdefault.jpg`,
-                        `https://i.ytimg.com/vi/BSqe-M7ffF8/maxresdefault.jpg`
-                    ],
-                    label: "Vendredi soir 18h",
-                },
-                {
-                    type: "iframe",
-                    url: `/PUDDI_BRAWL_001/`,
-                    label: "Samedi matin 8h",
-                },
-                {
-                    type: 'media',
-                    url: `https://www.youtube.com/embed/hyFST8UsRUQ?controls=0`,
-                    label: "Dimanche soir 17h",
-                }
-            ],
-        },
-        {
-            name     : `Example game`,
-            thumbnail: `https://i.ytimg.com/vi/BSqe-M7ffF8/maxresdefault.jpg`,
-            timeline   : [
-                {
-                    type: "images",
-                    images: [
-                        `https://i.ytimg.com/vi/BSqe-M7ffF8/maxresdefault.jpg`,
-                        `https://i.ytimg.com/vi/BSqe-M7ffF8/maxresdefault.jpg`,
-                        `https://i.ytimg.com/vi/BSqe-M7ffF8/maxresdefault.jpg`,
-                        `https://i.ytimg.com/vi/BSqe-M7ffF8/maxresdefault.jpg`
-                    ],
-                    label: "Vendredi soir 18h",
-                },
-                {
-                    type: "iframe",
-                    url: `/PUDDI_BRAWL_001/`,
-                    label: "Samedi matin 8h",
-                },
-                {
-                    type: 'media',
-                    url: `https://www.youtube.com/embed/hyFST8UsRUQ?controls=0`,
-                    label: "Dimanche soir 17h",
-                }
-            ],
-        },
-    ],
-
+    games: [],
 })
+
+async function loadGames() {
+    const games = []
+    for (let game of gamesList) {
+        games.push(await loadGame(game))
+    }
+    store.setState({
+        games,
+    })
+
+}
+loadGames()
+
+async function loadGame(gamePath) {
+    const gameConfig = await ky.get(fromGamePath('./config.json')).json()
+
+    gameConfig.thumbnail = fromGamePath(gameConfig.thumbnail)
+
+    gameConfig.timeline = gameConfig.timeline.map((item) => {
+        const result = Object.assign({}, item)
+        if (result.images) {
+            result.images = result.images.map(image => fromGamePath(image))
+        }
+        if (result.url) {
+            result.url = fromGamePath(result.url)
+        }
+
+        return result
+    })
+    console.log(gameConfig)
+    return gameConfig
+
+    function fromGamePath(...params) {
+        return join(gamePath, ...params.map(s => s.replace(/\.\//, '')))
+    }
+}
 
 export const gamesLens = Lens('games')
 export const homeLens = Lens('home')

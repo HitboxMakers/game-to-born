@@ -1,6 +1,8 @@
 import UrlPattern from 'url-pattern'
 import {Lens} from '../utilities/store/simpleLenses'
 import {put, get} from '../utilities/store/unisaga.effects'
+import {h} from 'superfine'
+import {run} from '../utilities/store/unisaga'
 
 const routesMap = new Map()
 
@@ -24,9 +26,25 @@ export const routeLens = Lens('route')
 
 export const initializeRouter = () => window.location.pathname
 
-export function navigate(url) {
-    return (store) => {
+export function* navigate(url) {
+    yield (store) => {
         put(routeLens, url)(store)
         return window.history.pushState({}, document.title, url)
     }
+}
+
+export function* connectRouter() {
+    yield store => {
+        window.onpopstate = () => {
+            console.log(store)
+            run(
+                updateRoute,
+                store
+            )
+        }
+    }
+}
+
+function* updateRoute() {
+    yield put(routeLens, window.location.pathname)
 }

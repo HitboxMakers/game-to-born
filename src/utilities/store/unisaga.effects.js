@@ -19,3 +19,8 @@ export function put(path, update) {
         lens.set(update)(store.getState())
     )
 }
+
+
+export function wait(time) {
+    return new Promise((resolve) => setTimeout(resolve, time))
+}
